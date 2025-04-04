@@ -1,6 +1,5 @@
 from django.apps import apps
 from django.contrib.auth.base_user import BaseUserManager
-from django.contrib.auth.hashers import make_password
 from django.contrib.auth.models import AbstractUser
 from django.contrib.auth.validators import UnicodeUsernameValidator
 from django.db import models
@@ -24,12 +23,12 @@ class UserManager(BaseUserManager):
             self.model._meta.app_label, self.model._meta.object_name
         )
         user = self.model(email=email, **extra_fields)
-        user.password = make_password(password)
+        user.set_password(password)
         user.save(using=self._db)
         return user
 
     def create_user(self, email=None, password=None, **extra_fields):
-        extra_fields.setdefault("is_staff", False)
+        extra_fields.setdefault("is_staff", True)
         extra_fields.setdefault("is_superuser", False)
         return self._create_user(email, password, **extra_fields)
 
@@ -99,3 +98,24 @@ class User(AbstractUser):
 
     def __str__(self):
         return self.email
+
+
+class UserFollowing(models.Model):
+
+    user_id = models.ForeignKey(
+        "User",
+        related_name="following",
+        on_delete=models.CASCADE,
+        null=True,
+        blank=True,
+    )
+    following_user_id = models.ForeignKey(
+        "User",
+        related_name="followers",
+        on_delete=models.CASCADE,
+        null=True,
+        blank=True,
+    )
+
+    def __str__(self):
+        return f"{self.user_id} {self.following_user_id}"
