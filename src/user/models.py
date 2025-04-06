@@ -1,3 +1,5 @@
+from datetime import timezone, datetime
+
 from django.apps import apps
 from django.contrib.auth.base_user import BaseUserManager
 from django.contrib.auth.models import AbstractUser
@@ -116,6 +118,48 @@ class UserFollowing(models.Model):
         null=True,
         blank=True,
     )
+    created = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        constraints = [
+            models.UniqueConstraint(
+                fields=["user_id", "following_user_id"], name="unique_followers"
+            )
+        ]
+
+        ordering = ["-created"]
 
     def __str__(self):
         return f"{self.user_id} {self.following_user_id}"
+
+
+class Post(models.Model):
+    author = models.ForeignKey("User", on_delete=models.CASCADE)
+    content = models.TextField()
+    image = models.ImageField(upload_to="post_image", blank=True, null=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+    likes = models.ManyToManyField(
+        "User",
+        related_name="likes",
+        blank=True,
+    )
+    is_published = models.BooleanField(default=False)
+
+    class Meta:
+        verbose_name = _("post")
+        verbose_name_plural = _("posts")
+
+    def __str__(self):
+        return f"Post {self.id}"
+
+
+class Hashtag(models.Model):
+    name = models.CharField(max_length=50, unique=True)
+
+    class Meta:
+        verbose_name = _("hashtag")
+        verbose_name_plural = _("hashtags")
+
+    def __str__(self):
+        return self.name

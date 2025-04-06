@@ -8,10 +8,12 @@ from user.views import (
     LogoutUserView,
     FollowingUsersViewSet,
     FollowersUsersViewSet,
+    FollowCreateDestroyViewSet,
 )
 
 router = routers.DefaultRouter()
 router.register("users", UserViewSet)
+router.register("follow", FollowCreateDestroyViewSet, "follow")
 router.register("followings", FollowingUsersViewSet, basename="followings")
 router.register("followers", FollowersUsersViewSet, basename="followers")
 

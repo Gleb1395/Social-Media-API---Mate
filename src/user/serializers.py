@@ -34,7 +34,6 @@ class UserSerializer(serializers.ModelSerializer):
         extra_kwargs = {"password": {"write_only": True, "min_length": 5}}
 
     def create(self, validated_data):
-        print(f"validated_data: {validated_data}")
         user = get_user_model().objects.create_user(**validated_data)
         return user
 
@@ -62,27 +61,78 @@ class UserListSerializer(serializers.ModelSerializer):
             "id",
             "email",
             "username",
-            "is_staff",
+        )
+
+
+class UserUpdateSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = get_user_model()
+        fields = (
+            "username",
+            "phone_number",
+            "bio",
+            "profile_image",
+            "location",
         )
 
 
 class UserDetailSerializer(serializers.ModelSerializer):
     class Meta:
         model = get_user_model()
-        fields = ("email", "username", "profile_image")
+        fields = (
+            "email",
+            "username",
+            "profile_image",
+            "location",
+            "phone_number",
+            "bio",
+            "profile_picture",
+        )
 
 
-class FollowingSerializer(serializers.ModelSerializer):
-    following_user_id = UserDetailSerializer(read_only=True)
+class UserShortsSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = get_user_model()
+        fields = (
+            "id",
+            "email",
+            "username",
+        )
+
+
+class FollowingListSerializer(serializers.ModelSerializer):
+    following_user_id = UserShortsSerializer(read_only=True)
 
     class Meta:
         model = UserFollowing
         fields = ("following_user_id",)
 
 
-class FollowersSerializer(serializers.ModelSerializer):
-    user_id = UserDetailSerializer(read_only=True)
+class FollowersListSerializer(serializers.ModelSerializer):
+    user_id = UserShortsSerializer(read_only=True)
 
     class Meta:
         model = UserFollowing
         fields = ("user_id",)
+
+
+class FollowingSerializer(serializers.ModelSerializer):
+    user_id = UserShortsSerializer(read_only=True)
+
+    class Meta:
+        model = UserFollowing
+        fields = (
+            "id",
+            "user_id",
+            "following_user_id",
+            "created",
+        )
+        read_only_fields = ("id", "user_id", "created")
+
+    def validate(self, attrs):
+        request_user = self.context["request"].user
+        following_user = attrs["following_user_id"]
+
+        if request_user == following_user:
+            raise serializers.ValidationError("You can't follow yourself")
+        return attrs
