@@ -9,6 +9,10 @@ from django.utils.translation import gettext as _
 
 
 class UserManager(BaseUserManager):
+    """
+    Custom user manager for creating regular and super users using email.
+    """
+
     use_in_migrations = True
 
     def _create_user(self, email, password, **extra_fields):
@@ -18,9 +22,6 @@ class UserManager(BaseUserManager):
         if not email:
             raise ValueError("The given email must be set")
         email = self.normalize_email(email)
-        # Lookup the real model class from the global app registry so this
-        # manager method can be used in migrations. This is fine because
-        # managers are by definition working on the real model.
         GlobalUserModel = apps.get_model(
             self.model._meta.app_label, self.model._meta.object_name
         )
@@ -103,6 +104,9 @@ class User(AbstractUser):
 
 
 class UserFollowing(models.Model):
+    """
+    Model to represent user-to-user following relationships.
+    """
 
     user_id = models.ForeignKey(
         "User",
@@ -134,6 +138,10 @@ class UserFollowing(models.Model):
 
 
 class Post(models.Model):
+    """
+    Model representing a user-created post with content, image, and hashtags.
+    """
+
     author = models.ForeignKey("User", on_delete=models.CASCADE)
     content = models.TextField()
     image = models.ImageField(upload_to="post_image", blank=True, null=True)
@@ -156,6 +164,10 @@ class Post(models.Model):
 
 
 class Hashtag(models.Model):
+    """
+    Model representing a unique hashtag for categorizing posts.
+    """
+
     name = models.CharField(max_length=50, unique=True)
 
     class Meta:

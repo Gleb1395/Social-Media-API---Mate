@@ -1,4 +1,5 @@
 from django.contrib.auth import get_user_model
+from drf_spectacular.utils import extend_schema
 from rest_framework import generics, status, mixins, viewsets
 from rest_framework.decorators import action
 from rest_framework.generics import get_object_or_404
@@ -19,6 +20,8 @@ from user.serializers import (
     FollowingSerializer,
     PostCreateUpdateSerializer,
     PostListSerializer,
+    UserFilterSerializer,
+    PostFilterSerializer,
 )
 
 
@@ -92,6 +95,10 @@ class UserViewSet(
         if self.action in ["list", "retrieve"]:
             return UserListSerializer
         return UserUpdateSerializer
+
+    @extend_schema(parameters=[UserFilterSerializer])
+    def list(self, request, *args, **kwargs):
+        return super().list(request, *args, **kwargs)
 
 
 class FollowingUsersViewSet(mixins.ListModelMixin, viewsets.GenericViewSet):
@@ -208,3 +215,7 @@ class PostListCreateUpdateDestroyViewSet(
         else:
             post.likes.add(user)
             return Response({"detail": "Liked"}, status=status.HTTP_200_OK)
+
+    @extend_schema(parameters=[PostFilterSerializer])
+    def list(self, request, *args, **kwargs):
+        return super().list(request, *args, **kwargs)

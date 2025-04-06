@@ -191,3 +191,18 @@ class PostCreateUpdateSerializer(serializers.ModelSerializer):
                 instance.hashtag.add(hashtag_obj)
 
         return instance
+
+
+class UserFilterSerializer(serializers.Serializer):
+    username = serializers.CharField(
+        required=False, help_text="Filter by username (partial match)"
+    )
+    location = serializers.CharField(
+        required=False, help_text="Filter by location (partial match)"
+    )
+
+
+class PostFilterSerializer(serializers.Serializer):
+    hashtag = serializers.CharField(
+        required=False, help_text="Filter by hashtag (partial match)"
+    )
