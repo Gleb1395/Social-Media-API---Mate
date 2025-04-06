@@ -145,6 +145,7 @@ class Post(models.Model):
         blank=True,
     )
     is_published = models.BooleanField(default=False)
+    hashtag = models.ManyToManyField("Hashtag", blank=True, related_name="posts")
 
     class Meta:
         verbose_name = _("post")

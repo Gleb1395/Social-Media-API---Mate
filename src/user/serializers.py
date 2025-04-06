@@ -2,7 +2,7 @@ from django.contrib.auth import get_user_model
 from rest_framework import serializers
 from rest_framework_simplejwt.serializers import TokenObtainPairSerializer
 
-from user.models import UserFollowing
+from user.models import UserFollowing, Post, Hashtag
 
 
 class MyTokenObtainPairSerializer(TokenObtainPairSerializer):
@@ -136,3 +136,58 @@ class FollowingSerializer(serializers.ModelSerializer):
         if request_user == following_user:
             raise serializers.ValidationError("You can't follow yourself")
         return attrs
+
+
+class HashtagSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Hashtag
+        fields = ("name",)
+        extra_kwargs = {"name": {"validators": []}}
+
+
+class PostListSerializer(serializers.ModelSerializer):
+    author = UserShortsSerializer(read_only=True)
+    hashtag = HashtagSerializer(read_only=True, many=True)
+
+    class Meta:
+        model = Post
+        fields = (
+            "author",
+            "content",
+            "image",
+            "created_at",
+            "updated_at",
+            "likes",
+            "hashtag",
+        )
+
+
+class PostCreateUpdateSerializer(serializers.ModelSerializer):
+    hashtag = HashtagSerializer(many=True)
+
+    class Meta:
+        model = Post
+        fields = ("content", "image", "hashtag")
+
+    def create(self, validated_data):
+        hashtag = validated_data.pop("hashtag")
+        post = Post.objects.create(**validated_data)
+
+        for tag in hashtag:
+            hashtag_obj, created = Hashtag.objects.get_or_create(**tag)
+            post.hashtag.add(hashtag_obj)
+
+        return post
+
+    def update(self, instance, validated_data):
+        hashtag_data = validated_data.pop("hashtag", None)
+
+        instance = super().update(instance, validated_data)
+
+        if hashtag_data is not None:
+            instance.hashtag.clear()
+            for hashtag in hashtag_data:
+                hashtag_obj, created = Hashtag.objects.get_or_create(**hashtag)
+                instance.hashtag.add(hashtag_obj)
+
+        return instance

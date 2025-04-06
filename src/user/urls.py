@@ -9,6 +9,7 @@ from user.views import (
     FollowingUsersViewSet,
     FollowersUsersViewSet,
     FollowCreateDestroyViewSet,
+    PostListCreateUpdateDestroyViewSet,
 )
 
 router = routers.DefaultRouter()
@@ -16,6 +17,8 @@ router.register("users", UserViewSet)
 router.register("follow", FollowCreateDestroyViewSet, "follow")
 router.register("followings", FollowingUsersViewSet, basename="followings")
 router.register("followers", FollowersUsersViewSet, basename="followers")
+
+router.register("posts", PostListCreateUpdateDestroyViewSet, basename="posts")
 
 
 urlpatterns = [

@@ -1,12 +1,13 @@
 from django.contrib.auth import get_user_model
 from rest_framework import generics, status, mixins, viewsets
+from rest_framework.decorators import action
 from rest_framework.generics import get_object_or_404
 from rest_framework.response import Response
 from rest_framework.views import APIView
 from rest_framework_simplejwt.tokens import RefreshToken
 from rest_framework_simplejwt.views import TokenObtainPairView
 
-from user.models import UserFollowing
+from user.models import UserFollowing, Post
 from user.permissions import IsAdminOrIfAuthenticatedReadOnly, IsOwnerOrAdmin
 from user.serializers import (
     MyTokenObtainPairSerializer,
@@ -16,6 +17,8 @@ from user.serializers import (
     FollowersListSerializer,
     UserUpdateSerializer,
     FollowingSerializer,
+    PostCreateUpdateSerializer,
+    PostListSerializer,
 )
 
 
@@ -63,12 +66,6 @@ class UserViewSet(
 ):
     queryset = get_user_model().objects.all()
     serializer_class = UserListSerializer
-
-    # def get_serializer_class(self):
-    #     if self.action == "retrieve":
-    #         return UserListSerializer
-    #     else:
-    #         return UserSerializer
 
     def get_permissions(self):
         if self.action in ["list", "retrieve"]:
@@ -160,4 +157,54 @@ class FollowCreateDestroyViewSet(
         if not instance:
             return Response({"detail": "You are not following this user."}, status=404)
         instance.delete()
-        return Response({"detail": "Unfollowed successfully."}, status=204)
+        return Response(
+            {"detail": "Unfollowed successfully."}, status=status.HTTP_204_NO_CONTENT
+        )
+
+
+class PostListCreateUpdateDestroyViewSet(
+    mixins.ListModelMixin,
+    mixins.CreateModelMixin,
+    mixins.UpdateModelMixin,
+    mixins.DestroyModelMixin,
+    viewsets.GenericViewSet,
+):
+    queryset = Post.objects.all()
+    permission_classes = [IsAdminOrIfAuthenticatedReadOnly]
+
+    def perform_create(self, serializer):
+        serializer.save(author=self.request.user)
+
+    def get_serializer_class(self):
+        if self.action == "list":
+            print(Post.objects.all())
+            return PostListSerializer
+        return PostCreateUpdateSerializer
+
+    def get_permissions(self):
+        if self.action in ["list", "retrieve"]:
+            permission_classes = [IsAdminOrIfAuthenticatedReadOnly]
+        elif self.action in ["update", "partial_update"]:
+            permission_classes = [IsOwnerOrAdmin]
+        else:
+            permission_classes = [IsAdminOrIfAuthenticatedReadOnly]
+        return [permission() for permission in permission_classes]
+
+    def get_queryset(self):
+        hashtag = self.request.GET.get("hashtag")
+
+        if hashtag:
+            return Post.objects.filter(hashtag=hashtag)
+        else:
+            return Post.objects.all()
+
+    @action(detail=True, methods=["post"])
+    def toggle_like(self, request, pk=None):
+        post = self.get_object()
+        user = request.user
+        if user in post.likes.all():
+            post.likes.remove(user)
+            return Response({"detail": "Unliked"}, status=status.HTTP_200_OK)
+        else:
+            post.likes.add(user)
+            return Response({"detail": "Liked"}, status=status.HTTP_200_OK)
